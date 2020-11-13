@@ -129,4 +129,4 @@ Github Commit: ghostV0.2
     | ghost0 | 3,271,594        | 12.48            | 85.20    | 0.0510                |
     | ghost  | 3,102,970        | 11.84            | 85.33    | 0.0638                |
 
-    ![ghost_cifar_acc](README.assets/ghost_cifar_acc.png)
+    ![ghost_cifar_acc](figure/ghost_cifar_acc.png)
