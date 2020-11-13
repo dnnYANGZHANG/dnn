@@ -62,24 +62,6 @@ class ConvBnAct(nn.Module):
         return x
 
 
-
-
-def channel_shuffle(x, groups):
-    batchsize, num_channels, height, width = x.data.size()
-
-    channels_per_group = num_channels // groups
-
-    # reshape
-    x = x.view(batchsize, groups,
-               channels_per_group, height, width)
-    # transpose
-    # - contiguous() required if transpose() is used before view().
-    #   See https://github.com/pytorch/pytorch/issues/764
-    x = torch.transpose(x, 1, 2).contiguous()
-    # flatten
-    x = x.view(batchsize, -1, height, width)
-    return x
-
 class GhostModule(nn.Module):
     def __init__(self, inp, oup, kernel_size=3, ratio=2, dw_size=3, stride=1, padding=1, relu=True):
         super(GhostModule, self).__init__()
@@ -106,6 +88,7 @@ class GhostModule(nn.Module):
         return out[:,:self.oup,:,:]
 
 
+
 class GhostBottleneck(nn.Module):
     """ Ghost bottleneck w/ optional SE"""
 
@@ -115,10 +98,6 @@ class GhostBottleneck(nn.Module):
         has_se = se_ratio is not None and se_ratio > 0.
         self.stride = stride
         self.group = group
-
-        self.conv1 = nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=1, \
-                               padding=1, \
-                               groups=self.group, bias=False)
 
         # Point-wise expansion
         self.ghost1 = GhostModule(in_chs, mid_chs, padding=padding, relu=True)
@@ -147,18 +126,15 @@ class GhostBottleneck(nn.Module):
                 # nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
                 #           padding=(dw_kernel_size - 1) // 2, groups=in_chs, bias=False),
                 nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
-                                       padding=padding,
-                                       groups=self.group, bias=False),
+                                       padding=padding, bias=False),
                 nn.BatchNorm2d(in_chs),
                 nn.Conv2d(in_chs, out_chs, 1, stride=1, padding=0, bias=False),
                 nn.BatchNorm2d(out_chs),
             )
 
     def forward(self, x):
-        x = channel_shuffle(x, self.group)
         residual = x
         # 1st ghost bottleneck
-        x = self.conv1(x)
         x = self.ghost1(x)
         # Depth-wise convolution
         if self.stride > 1:

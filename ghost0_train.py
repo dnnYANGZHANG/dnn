@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import argparse
-from ghostNet_cifar10 import GhostNet
+from ghostNet0_cifar10 import GhostNet
 import time
 
 
@@ -30,8 +30,8 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     learning_rate = args.learning_rate
 
-    writerPath = '../dnn_ghost/record/{}-{}-{}'.format(num_epochs, batch_size, learning_rate)
-    ckptPath = '../dnn_ghost/ckpt/{}-{}-{}.ckpt'.format(num_epochs, batch_size, learning_rate)
+    writerPath = '../dnn_ghost0/record/{}-{}-{}'.format(num_epochs, batch_size, learning_rate)
+    ckptPath = '../dnn_ghost0/ckpt/{}-{}-{}.ckpt'.format(num_epochs, batch_size, learning_rate)
 
     print('num_epochs:{}'.format(num_epochs))
     print('batch_size:{}'.format(batch_size))

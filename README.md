@@ -98,6 +98,8 @@ Github Commit: ghostV0.2
 
  - 创建可用于`cifar-10`训练的ghostNet, 位于`./ghostNet_cifar10.py`
 
+ - 新增原ghost的模型`ghost0.py`, `ghostNet0_cifar10.py`, `ghost0_train.py`
+
 #### Usage
 
 - 新结构`GhostBottleneck`的使用
@@ -115,7 +117,16 @@ Github Commit: ghostV0.2
   layers = nn.Sequential(*layers)
   ```
 - `ghostNet`在`cifar10`中的使用
-  
-  - `python ghostNet_cifar10.py`即可打印结构
-  - `sh run.sh`开始训练
-  - 目前跑了epoch=19, batch_size=16, learning_rate=1e-3, **testing acc=0.777**
+
+  - `python ghostNet_cifar10.py`即可打印结构, `ghostNet0_cifar10.py`为原ghost结构(记为ghost0)
+
+  - `sh run.sh`
+
+  - Result: 
+
+    |        | Trainable params | Params size (MB) | Accuracy | s/iter (batchSize=16) |
+    | ------ | ---------------- | ---------------- | -------- | --------------------- |
+    | ghost0 | 3,271,594        | 12.48            | 85.20    | 0.0510                |
+    | ghost  | 3,102,970        | 11.84            | 85.33    | 0.0638                |
+
+    ![ghost_cifar_acc](README.assets/ghost_cifar_acc.png)
