@@ -81,20 +81,20 @@ def channel_shuffle(x, groups):
     return x
 
 class GhostModule(nn.Module):
-    def __init__(self, inp, oup, kernel_size=1, ratio=2, dw_size=3, stride=1, relu=True):
+    def __init__(self, inp, oup, kernel_size=3, ratio=2, dw_size=3, stride=1, padding=1, relu=True):
         super(GhostModule, self).__init__()
         self.oup = oup
         init_channels = math.ceil(oup / ratio)
         new_channels = init_channels*(ratio-1)
 
         self.primary_conv = nn.Sequential(
-            nn.Conv2d(inp, init_channels, kernel_size, stride, kernel_size//2, bias=False),
+            nn.Conv2d(inp, init_channels, kernel_size, stride, padding=padding, bias=False),
             nn.BatchNorm2d(init_channels),
             nn.ReLU(inplace=True) if relu else nn.Sequential(),
         )
 
         self.cheap_operation = nn.Sequential(
-            nn.Conv2d(init_channels, new_channels, dw_size, 1, dw_size//2, groups=init_channels, bias=False),
+            nn.Conv2d(init_channels, new_channels, dw_size, 1, padding=1, groups=init_channels, bias=False),
             nn.BatchNorm2d(new_channels),
             nn.ReLU(inplace=True) if relu else nn.Sequential(),
         )
@@ -111,23 +111,23 @@ class GhostBottleneck(nn.Module):
     """ Ghost bottleneck w/ optional SE"""
 
     def __init__(self, in_chs, mid_chs, out_chs, group=4, dw_kernel_size=3,
-                 stride=1, act_layer=nn.ReLU, se_ratio=0.):
+                 stride=1, padding=1, act_layer=nn.ReLU, se_ratio=0.):
         super(GhostBottleneck, self).__init__()
         has_se = se_ratio is not None and se_ratio > 0.
         self.stride = stride
         self.group = group
 
         self.conv1 = nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=1, \
-                               padding=(dw_kernel_size - 1) // 2, \
+                               padding=1, \
                                groups=self.group, bias=False)
 
         # Point-wise expansion
-        self.ghost1 = GhostModule(in_chs, mid_chs, relu=True)
+        self.ghost1 = GhostModule(in_chs, mid_chs, padding=padding, relu=True)
 
         # Depth-wise convolution
         if self.stride > 1:
             self.conv_dw = nn.Conv2d(mid_chs, mid_chs, dw_kernel_size, stride=stride,
-                                     padding=(dw_kernel_size - 1) // 2,
+                                     padding=1,
                                      groups=mid_chs, bias=False)
             self.bn_dw = nn.BatchNorm2d(mid_chs)
 
@@ -138,7 +138,7 @@ class GhostBottleneck(nn.Module):
             self.se = None
 
         # Point-wise linear projection
-        self.ghost2 = GhostModule(mid_chs, out_chs, relu=False)
+        self.ghost2 = GhostModule(mid_chs, out_chs, padding=1, relu=False)
 
         # shortcut
         if (in_chs == out_chs and self.stride == 1):
@@ -148,7 +148,7 @@ class GhostBottleneck(nn.Module):
                 # nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
                 #           padding=(dw_kernel_size - 1) // 2, groups=in_chs, bias=False),
                 nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
-                                       padding=(dw_kernel_size - 1) // 2,
+                                       padding=padding,
                                        groups=self.group, bias=False),
                 nn.BatchNorm2d(in_chs),
                 nn.Conv2d(in_chs, out_chs, 1, stride=1, padding=0, bias=False),
@@ -227,7 +227,7 @@ class GhostNet(nn.Module):
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.classifier(x)
         return x
-
+"""
 def ghostnet(**kwargs):
     """
     Constructs a GhostNet model
