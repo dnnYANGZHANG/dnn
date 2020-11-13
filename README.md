@@ -2,7 +2,7 @@
 
 
 
-### Ghost Bottleneck
+## Ghost Bottleneck
 
 模型来自
 
@@ -11,7 +11,7 @@
 
 
 
-##### version 0.1
+### version 0.1
 
 时间: 2020.11.13 10:34
 
@@ -41,7 +41,7 @@ Inp: input, CS: channel shuffle, GC: group conv, GM: GhostModule
 
 注: 省略了`Se`层
 
-##### usage
+#### usage
 
 ```python
 # zhq: define a ghost GhostBottleneck
@@ -49,9 +49,9 @@ Inp: input, CS: channel shuffle, GC: group conv, GM: GhostModule
 # hidden_channel, output_channel can be divided by 8
 layers = []
 blockInfo1 = [3, 16, 16, 0, 1, 4]
-layers.append(blockInfo1)
+layers.append(GhostBottleneck(blockInfo1))
 blockInfo2 = [3, 48, 24, 0, 2, 4]
-layers.append(blockInfo2)
+layers.append(GhostBottleneck(blockInfo2))
 layers = nn.Sequential(*layers)
 ```
 
