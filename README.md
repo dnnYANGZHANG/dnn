@@ -20,10 +20,10 @@ Github commit: ghostV0.1
 原结构: 
 
 ```
-Inp ---> GM1 --> GM2 --------------+--> Out
-     |                             |
-     |shortcut                     |
-     |--> BN --> conv1x1 --> BN ---|
+Inp ---> GM1 --> GM2 --------------------------+--> Out
+     |                                         |
+     |shortcut                                 |
+     |--> conv3x3 --> BN --> conv1x1 --> BN ---|
 ```
 新结构:
 ```
@@ -51,6 +51,8 @@ layers = nn.Sequential(*layers)
 
 ### Version 0.2
 时间: 2020.11.13 14:56
+
+Github Commit: ghostV0.2
 
 改动: 
  - 原先的结构默认几乎所有的padding=1, 通过stride=2做downsampling. 
