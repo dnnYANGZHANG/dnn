@@ -182,4 +182,4 @@ GhostBottleneck(...., padding=padding, group=group)
     | ghostV0.22 | 3,087,902        | 11.78            | 84.69    | 0.0594                |
     
     
-    ![ghost_cifar_acc](figure/ghost_cifar_acc.png)
+    ![ghost_cifar_acc](./figure/ghost_cifar_acc.png)
