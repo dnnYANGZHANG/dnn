@@ -27,10 +27,10 @@ Inp ---> GM1 --> GM2 --------------------------+--> Out
 ```
 新结构:
 ```
-Inp ---> CS --> GC --> GM1 --> GM2 ----------+--> Out
-     |                                       |
-     |shortcut                               |
-     |-----> GC --> BN --> conv1x1 --> BN ---|
+Inp --> CS ---> GC --> GM1 --> GM2 -----------------+--> Out
+            |                                       |
+            |shortcut                               |
+            |-----> GC --> BN --> conv1x1 --> BN ---|
      
 Inp: input, CS: channel shuffle, GC: group conv, GM: GhostModule
 ```
@@ -54,8 +54,16 @@ layers = nn.Sequential(*layers)
 
 Github Commit: ghostV0.2
 
+实现: 
+
+```
+ghost.py
+  |- GhostModule
+  |- GhostBottleneckV02
+```
+
 改动: 
- - 原先的结构默认几乎所有的padding=1, 通过stride=2做downsampling. 
+ - **增加padding**. 原先的结构默认几乎所有的padding=1, 通过stride=2做downsampling. 
 
    ```
    GhostBottleneck(....)
@@ -116,17 +124,66 @@ Github Commit: ghostV0.2
   layers.append(GhostBottleneck(blockInfo2))
   layers = nn.Sequential(*layers)
   ```
+  
 - `ghostNet`在`cifar10`中的使用
 
   - `python ghostNet_cifar10.py`即可打印结构, `ghostNet0_cifar10.py`为原ghost结构(记为ghost0)
+- `sh run.sh`
+  
 
-  - `sh run.sh`
+
+
+### Version 0.22
+时间: 2020.11.13 14:56
+
+Github Commit: ghostV0.22
+
+实现: 
+
+```
+ghost.py
+  |- GhostModuleV022
+  |- GhostBottleneckV022
+```
+
+改动: 
+```
+GhostBottleneck(...., padding=padding, group=group)
+  |-- Conv2d: padding=1, 3x3, group=group
+  |-- GhostModule: padding=padding
+           |-- Conv2d: padding=padding, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- GhostModule: padding=1
+           |-- Conv2d: padding=1, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- Shortcut: 
+           |-- Conv2d: padding=padding, 3x3, group=group
+           |-- ....
+           |-- Conv2d: padding=0, 1x1
+```
+
+ - 创建可用于`cifar-10`训练的ghostNet, 位于`./ghostNet_cifar10.py`
+
+ - 新增原ghost的模型`ghost0.py`, `ghostNet0_cifar10.py`, `ghost0_train.py`
+
+#### Usage
+
+- 与`Version0.2`一样
+
+
+
+## Version Comparison
 
   - Result: 
 
-    |        | Trainable params | Params size (MB) | Accuracy | s/iter (batchSize=16) |
-    | ------ | ---------------- | ---------------- | -------- | --------------------- |
-    | ghost0 | 3,271,594        | 12.48            | 85.20    | 0.0510                |
-    | ghost  | 3,102,970        | 11.84            | 85.33    | 0.0638                |
-
+    |            | Trainable params | Params size (MB) | Accuracy | s/iter (batchSize=16) |
+    | ---------- | ---------------- | ---------------- | -------- | --------------------- |
+    | ghost0     | 3,271,594        | 12.48            | 85.20    | 0.0510                |
+    | ghostV0.2  | 3,102,970        | 11.84            | 85.33    | 0.0638                |
+  | ghostV0.22 | 3,087,902        | 11.78            | 84.69    | 0.0594                |
+    
     ![ghost_cifar_acc](figure/ghost_cifar_acc.png)

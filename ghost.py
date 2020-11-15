@@ -106,12 +106,12 @@ class GhostModule(nn.Module):
         return out[:,:self.oup,:,:]
 
 
-class GhostBottleneck(nn.Module):
+class GhostBottleneckV02(nn.Module):
     """ Ghost bottleneck w/ optional SE"""
 
     def __init__(self, in_chs, mid_chs, out_chs, group=4, dw_kernel_size=3,
                  stride=1, padding=1, act_layer=nn.ReLU, se_ratio=0.):
-        super(GhostBottleneck, self).__init__()
+        super(GhostBottleneckV02, self).__init__()
         has_se = se_ratio is not None and se_ratio > 0.
         self.stride = stride
         self.group = group
@@ -136,6 +136,7 @@ class GhostBottleneck(nn.Module):
         else:
             self.se = None
 
+
         # Point-wise linear projection
         self.ghost2 = GhostModule(mid_chs, out_chs, padding=1, relu=False)
 
@@ -144,8 +145,6 @@ class GhostBottleneck(nn.Module):
             self.shortcut = nn.Sequential()
         else:
             self.shortcut = nn.Sequential(
-                # nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
-                #           padding=(dw_kernel_size - 1) // 2, groups=in_chs, bias=False),
                 nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=stride,
                                        padding=padding,
                                        groups=self.group, bias=False),
@@ -168,9 +167,55 @@ class GhostBottleneck(nn.Module):
         if self.se is not None:
             x = self.se(x)
         # 2nd ghost bottleneck
+        # x = channel_shuffle(x, self.group)
         x = self.ghost2(x)
         x += self.shortcut(residual)
         return x
+
+class GhostModuleV022(GhostModule):
+    def __init__(self, inp, oup, kernel_size=3, ratio=2, dw_size=3, stride=1, padding=1, relu=True):
+        super().__init__(inp, oup, kernel_size, ratio, dw_size, stride, padding, relu)
+        self.oup = oup
+        init_channels = math.ceil(oup / ratio)
+        new_channels = init_channels*(ratio-1)
+        self.cheap_operation = nn.Sequential(
+            nn.Conv2d(init_channels, new_channels, 1, 1, padding=0, groups=init_channels, bias=False),
+            nn.BatchNorm2d(new_channels),
+            nn.ReLU(inplace=True) if relu else nn.Sequential(),
+        )
+
+
+class GhostBottleneckV022(GhostBottleneckV02):
+    def __init__(self, in_chs, mid_chs, out_chs, group=4, dw_kernel_size=3,
+                 stride=1, padding=1, act_layer=nn.ReLU, se_ratio=0.):
+        super(GhostBottleneckV022, self).__init__(in_chs, mid_chs, out_chs, group, dw_kernel_size,
+                 stride, padding, act_layer, se_ratio)
+
+        self.conv1 = nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=1, \
+                               padding=1, \
+                               groups=self.group, bias=False)
+        self.se = SqueezeExcite(mid_chs, se_ratio=se_ratio)
+        self.ghost1 = GhostModuleV022(in_chs, mid_chs, padding=padding, relu=True)
+        self.ghost2 = GhostModuleV022(mid_chs, out_chs, padding=1, relu=True)
+
+    def forward(self, x):
+        x = channel_shuffle(x, self.group)
+        residual = x
+        # 1st ghost bottleneck
+        x = self.conv1(x)
+        x = self.ghost1(x)
+        # Depth-wise convolution
+        # Squeeze-and-excitation
+        # x = self.se(x)
+        # 2nd ghost bottleneck
+        # x = channel_shuffle(x, self.group)
+        x = self.ghost2(x)
+        x += self.shortcut(residual)
+        return x
+
+
+
+
 
 '''
 class GhostNet(nn.Module):

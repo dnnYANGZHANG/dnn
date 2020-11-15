@@ -55,7 +55,7 @@ class GhostNet(nn.Module):
             for k, exp_size, c, se_ratio, s, g, p in cfg:
                 output_channel = c
                 hidden_channel = exp_size
-                layers.append(GhostBottleneck(input_channel, hidden_channel, output_channel, group=g, dw_kernel_size=k,
+                layers.append(GhostBottleneckV022(input_channel, hidden_channel, output_channel, group=g, dw_kernel_size=k,
                                               stride=s, padding=p, se_ratio=se_ratio))
                 input_channel = output_channel
             stages.append(nn.Sequential(*layers))
@@ -80,9 +80,50 @@ class GhostNet(nn.Module):
         x = self.classifier(x)
         return x
 
+
+class GhostNetV022(GhostNet):
+    def __init__(self):
+        super().__init__()
+        input_channel = 8
+        self.cfgs = [
+            [[3, 24, 16, 0, 1, 4, 0]],
+            [[3, 48, 32, 0.25, 1, 4, 0]],
+            [[3, 64, 48, 0, 1, 4, 0]],
+            [[3, 72, 64, 0.25, 1, 4, 0]],
+            [[3, 120, 72, 0, 1, 4, 0]],
+            [[3, 240, 80, 0, 1, 8, 0]],
+            [[3, 240, 80, 0.25, 1, 8, 1],
+             [3, 240, 80, 0, 1, 8, 1],
+             [3, 240, 112, 0, 1, 8, 0]],
+            [[3, 480, 160, 0.25, 1, 16, 0],
+             [3, 480, 160, 0, 1, 16, 1],
+             [3, 480, 160, 0, 1, 16, 1]]
+        ]
+        stages = []
+        for cfg in self.cfgs:
+            layers = []
+            for k, exp_size, c, se_ratio, s, g, p in cfg:
+                output_channel = c
+                hidden_channel = exp_size
+                layers.append(GhostBottleneckV022(input_channel, hidden_channel, output_channel, group=g, dw_kernel_size=k,
+                                                  stride=s, padding=p, se_ratio=se_ratio))
+                input_channel = output_channel
+            stages.append(nn.Sequential(*layers))
+        stages.append(nn.Sequential(LastConvLayer(input_channel, 480, 1, groups=16)))
+        self.blocks = nn.Sequential(*stages)
+
+        # Last Several Layers
+        self.global_pool = nn.AdaptiveAvgPool2d((4, 4))
+        # self.global_pool = nn.AvgPool2d(8)
+        # self.conv_last = nn.Conv2d(480, 640, 1, 1, 0, bias=True)
+        # self.act_last = nn.ReLU(inplace=True)
+        self.classifier = nn.Linear(7680, 10)
+
+
+
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GhostNet().to(device)
+    model = GhostNetV022().to(device)
     summary(model, (3, 28, 28))
 
 
