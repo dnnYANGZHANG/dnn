@@ -129,7 +129,6 @@ ghost.py
 
   - `python ghostNet_cifar10.py`即可打印结构, `ghostNet0_cifar10.py`为原ghost结构(记为ghost0)
 - `sh run.sh`
-  
 
 
 
@@ -146,7 +145,7 @@ ghost.py
   |- GhostBottleneckV022
 ```
 
-改动: 
+改动:  **将GhostModule的第二个Conv2d, padding=1, 3x3 -> padding=0, 1x1**
 ```
 GhostBottleneck(...., padding=padding, group=group)
   |-- Conv2d: padding=1, 3x3, group=group
@@ -165,10 +164,6 @@ GhostBottleneck(...., padding=padding, group=group)
            |-- ....
            |-- Conv2d: padding=0, 1x1
 ```
-
- - 创建可用于`cifar-10`训练的ghostNet, 位于`./ghostNet_cifar10.py`
-
- - 新增原ghost的模型`ghost0.py`, `ghostNet0_cifar10.py`, `ghost0_train.py`
 
 #### Usage
 
