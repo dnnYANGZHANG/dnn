@@ -171,6 +171,88 @@ GhostBottleneck(...., padding=padding, group=group)
 
 
 
+### Version 0.22
+
+时间: 2020.11.16 20:23
+
+Github Commit: ghostV0.23
+
+实现: 
+
+```
+ghost.py
+  |- GhostModuleV022
+  |- GhostBottleneckV023
+```
+
+改动:  **将GhostModule的第二个Conv2d, padding=1, 3x3 -> padding=0, 1x1**
+
+```
+GhostBottleneck(...., padding=padding, group=group)
+  |-- Conv2d: padding=1, 3x3, group=group
+  |-- GhostModule: padding=padding
+           |-- Conv2d: padding=padding, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- GhostModule: padding=1
+           |-- Conv2d: padding=1, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- Shortcut: 
+           |-- Conv2d: padding=padding, 3x3, group=group
+           |-- ....
+           |-- Conv2d: padding=0, 1x1
+```
+
+#### Usage
+
+- 与`Version0.2`一样
+
+  
+
+### Version 0.23
+
+时间: 2020.11.16 23:41
+
+Github Commit: ghostV0.23
+
+实现: 
+
+```
+ghost.py
+  |- GhostModuleV022
+  |- GhostBottleneckV023
+```
+
+改动:  **用seLayer替换conv2d**
+
+```
+GhostBottleneck(...., padding=padding, group=group)
+  |-- SqueezeExcite(in_chs, se_ratio=0.1)
+  |-- GhostModule: padding=padding
+           |-- Conv2d: padding=padding, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- GhostModule: padding=1
+           |-- Conv2d: padding=1, 3x3, 
+           |-- ....
+           |-- Conv2d: padding=0, 1x1, group=all
+           |-- ....
+  |-- Shortcut: 
+           |-- Conv2d: padding=padding, 3x3, group=group
+           |-- ....
+           |-- Conv2d: padding=0, 1x1
+```
+
+#### Usage
+
+- 与`Version0.2`一样
+
+
+
 ## Version Comparison
 
   - Result: 
@@ -179,7 +261,9 @@ GhostBottleneck(...., padding=padding, group=group)
     | ---------- | ---------------- | ---------------- | -------- | --------------------- |
     | ghost0     | 3,271,594        | 12.48            | 85.20    | 0.0510                |
     | ghostV0.2  | 3,102,970        | 11.84            | 85.33    | 0.0638                |
-    | ghostV0.22 | 3,087,902        | 11.78            | 84.69    | 0.0594                |
+    | ghostV0.22 | 3,087,802        | 11.78            | 86.61    | 0.0589                |
+    | ghostV0.23 | 3,028,266        | 11.55            | 86.28    | 0.0611                |
     
     
-    ![ghost_cifar_acc](./figure/ghost_cifar_acc.png)
+    ![ghost_cifar_acc](https://github.com/dnnYANGZHANG/dnn/blob/main/figure/ghost_cifar_acc.png)
+
