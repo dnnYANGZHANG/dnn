@@ -214,6 +214,38 @@ class GhostBottleneckV022(GhostBottleneckV02):
         return x
 
 
+class GhostBottleneckV023(GhostBottleneckV022):
+    def __init__(self, in_chs, mid_chs, out_chs, group=4, dw_kernel_size=3,
+                 stride=1, padding=1, act_layer=nn.ReLU, se_ratio=0.):
+        super(GhostBottleneckV023, self).__init__(in_chs, mid_chs, out_chs, group, dw_kernel_size,
+                                                  stride, padding, act_layer, se_ratio)
+
+        self.conv1 = nn.Conv2d(in_chs, in_chs, dw_kernel_size, stride=1, \
+                               padding=1, \
+                               groups=self.group, bias=False)
+        self.se = SqueezeExcite(in_chs, se_ratio=0.1)
+        self.ghost1 = GhostModuleV022(in_chs, mid_chs, padding=padding, relu=True)
+        self.ghost2 = GhostModuleV022(mid_chs, out_chs, padding=1, relu=True)
+
+
+    def forward(self, x):
+        x = channel_shuffle(x, self.group)
+        residual = x
+        # 1st ghost bottleneck
+        # x = self.conv1(x)
+        x2 = self.se(x)
+        x = self.ghost1(x)
+        # Depth-wise convolution
+        # Squeeze-and-excitation
+        # x = self.se(x)
+        # 2nd ghost bottleneck
+        # x = channel_shuffle(x, self.group)
+        x = self.ghost2(x)
+        x += x2
+        x += self.shortcut(residual)
+        return x
+
+
 
 
 
